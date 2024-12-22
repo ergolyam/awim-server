@@ -34,6 +34,7 @@ import java.net.ServerSocket
 import java.net.Socket
 import java.net.SocketException
 import java.net.SocketTimeoutException
+import java.nio.ByteBuffer
 
 interface ServiceCallback {
     fun onPortChanged(p: Int)
@@ -172,7 +173,7 @@ class ConnectionService() : Service() {
 
     private fun tcp() {
         bindError = false
-        val audioSource = MediaRecorder.AudioSource.MIC
+        val audioSource = MediaRecorder.AudioSource.VOICE_COMMUNICATION
         val sampleRate = 48000
         val channelConfig = AudioFormat.CHANNEL_IN_MONO
         val audioFormat = AudioFormat.ENCODING_PCM_16BIT
@@ -237,6 +238,8 @@ class ConnectionService() : Service() {
         fun stop() {
             dataInputStream?.close()
             dataOutputStream?.close()
+            running = false
+            triggerRunningCallback()
         }
         while (true) {
             if (!running) {
@@ -246,13 +249,16 @@ class ConnectionService() : Service() {
             try {
                 val dataSize = ByteArray(4)
                 dataInputStream!!.read(dataSize)
+                //Log.d("tcp", "start")
                 val amount = (dataSize[0].toInt() and 0xff) or
                         ((dataSize[1].toInt() and 0xff) shl 8) or
                         ((dataSize[2].toInt() and 0xff) shl 16) or
                         ((dataSize[3].toInt()) shl 24)
+                //Log.d("tcp", "amount: $amount")
                 val buf = ByteArray(amount)
-                audioRecord!!.read(buf, 0, amount, AudioRecord.READ_BLOCKING)
+                audioRecord!!.read(buf, 0, buf.size, AudioRecord.READ_BLOCKING)
                 dataOutputStream!!.write(buf)
+                //Log.d("tcp", "end")
             } catch (e: Exception) {
                 e.printStackTrace()
                 stop()
@@ -267,7 +273,7 @@ class ConnectionService() : Service() {
     private fun udp() {
         bindError = false
         var firstReceived = false
-        val audioSource = MediaRecorder.AudioSource.MIC
+        val audioSource = MediaRecorder.AudioSource.VOICE_COMMUNICATION
         val sampleRate = 48000
         val channelConfig = AudioFormat.CHANNEL_IN_MONO
         val audioFormat = AudioFormat.ENCODING_PCM_16BIT
