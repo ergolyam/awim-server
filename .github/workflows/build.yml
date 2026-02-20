@@ -24,10 +24,6 @@ jobs:
           distribution: temurin
           cache: gradle
 
-      - name: Set up Android SDK tools
-        if: inputs.variant == 'Release'
-        uses: android-actions/setup-android@v3
-
       - name: Build package
         run: |
           ./gradlew clean assemble${{ inputs.variant }}
@@ -35,9 +31,9 @@ jobs:
       - name: Sign package
         if: inputs.variant == 'Release'
         run: |
-          zipalign -v 4 app/build/outputs/apk/release/app-release-unsigned.apk app-release-aligned.apk
-          apksigner sign --ks release-key.keystore --ks-pass pass:${{ secrets.KEY_PASSWORD }} --out awim-release.apk app-release-aligned.apk
-          apksigner verify awim-release.apk
+          ${ANDROID_HOME}/build-tools/34.0.0/zipalign -v 4 app/build/outputs/apk/release/app-release-unsigned.apk app-release-aligned.apk
+          ${ANDROID_HOME}/build-tools/34.0.0/apksigner sign --ks release-key.keystore --ks-pass pass:${{ secrets.KEY_PASSWORD }} --out awim-release.apk app-release-aligned.apk
+          ${ANDROID_HOME}/build-tools/34.0.0/apksigner verify awim-release.apk
 
       - name: Move debug package
         if: inputs.variant == 'Debug'
