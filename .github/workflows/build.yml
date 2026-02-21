@@ -25,8 +25,7 @@ jobs:
           cache: gradle
 
       - name: Build package
-        run: |
-          ./gradlew clean assemble${{ inputs.variant }}
+        run: ./gradlew clean assemble${{ inputs.variant }}
 
       - name: Sign package
         if: inputs.variant == 'Release'
@@ -37,8 +36,7 @@ jobs:
 
       - name: Move debug package
         if: inputs.variant == 'Debug'
-        run: |
-          mv app/build/outputs/apk/debug/app-debug.apk awim-debug.apk
+        run: mv app/build/outputs/apk/debug/app-debug.apk awim-debug.apk
 
       - name: Upload glibc build artifact
         uses: actions/upload-artifact@v4
