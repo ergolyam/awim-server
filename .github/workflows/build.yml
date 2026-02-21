@@ -1,0 +1,48 @@
+name: Build
+
+on:
+  workflow_call:
+    inputs:
+      variant:
+        type: string
+        required: true
+    secrets:
+      KEY_PASSWORD:
+        required: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          java-version: 17
+          distribution: temurin
+          cache: gradle
+
+      - name: Build package
+        run: |
+          ./gradlew clean assemble${{ inputs.variant }}
+
+      - name: Sign package
+        if: inputs.variant == 'Release'
+        run: |
+          ${ANDROID_HOME}/build-tools/34.0.0/zipalign -v 4 app/build/outputs/apk/release/app-release-unsigned.apk app-release-aligned.apk
+          ${ANDROID_HOME}/build-tools/34.0.0/apksigner sign --ks release-key.keystore --ks-pass pass:${{ secrets.KEY_PASSWORD }} --out awim-release.apk app-release-aligned.apk
+          ${ANDROID_HOME}/build-tools/34.0.0/apksigner verify awim-release.apk
+
+      - name: Move debug package
+        if: inputs.variant == 'Debug'
+        run: |
+          mv app/build/outputs/apk/debug/app-debug.apk awim-debug.apk
+
+      - name: Upload glibc build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.variant }}
+          path: ./awim-*.apk
+          if-no-files-found: error
